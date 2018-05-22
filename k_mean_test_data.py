@@ -43,11 +43,30 @@ def rand_centroid(df, k):
     out = pd.DataFrame(np.array(list_cen).reshape(k,dim),
                       columns = df.columns)
     return out
+"""
+Cold start centroid, from random point from data
+"""
+# 
+centroids = rand_centroid(df, 3)
 
 # calculate distance each centroid
 def dist_centroids(df, centroids):
-    dim = df.ndim
-    list_dist = []
-    for centroid in centroids:
-         dist(df, centroid)
+    d = pd.DataFrame()
+    for centroid in centroids.values:
+        distance = dist(df, centroid)
+        d = pd.concat([d, distance], axis = 'columns')
+    d.columns = centroids.index
+    return d
 
+each_dist = dist_centroids(df, centroids)
+
+# choose cluster centroid with least distance
+cluster = each_dist.idxmin(axis = 'columns')
+
+# find new centroid from choose centroid
+def new_mean_centroids(df, centroids, cluster):
+    new_centroids = pd.DataFrame()
+    for cen in centroids.index:
+        clust_df = df[cluster == cen]
+        new_centroids = new_centroids.append(clust_df.mean(), ignore_index=True)
+    return new_centroids
