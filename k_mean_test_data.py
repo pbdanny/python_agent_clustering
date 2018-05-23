@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 22 05:20:36 2018
-
 @author: Danny
 """
 
@@ -46,7 +45,7 @@ def rand_centroid(df, k):
 """
 Cold start centroid, from random point from data
 """
-# 
+#
 centroids = rand_centroid(df, 3)
 
 # calculate distance each centroid
@@ -58,10 +57,17 @@ def dist_centroids(df, centroids):
     d.columns = centroids.index
     return d
 
-each_dist = dist_centroids(df, centroids)
-
 # choose cluster centroid with least distance
 cluster = each_dist.idxmin(axis = 'columns')
+
+# calculate withiness
+def withiness(df, centroids, cluster):
+    within = 0
+    for cen in centroids.index:
+        clust_df = df[cluster == cen]
+        within = within + dist(clust_df, centroids.iloc[cen]).sum()
+    return within
+
 
 # find new centroid from choose centroid
 def new_mean_centroids(df, centroids, cluster):
@@ -70,3 +76,40 @@ def new_mean_centroids(df, centroids, cluster):
         clust_df = df[cluster == cen]
         new_centroids = new_centroids.append(clust_df.mean(), ignore_index=True)
     return new_centroids
+"""
+Main start heare
+
+"""
+# constant part
+K = 3
+MAX_LOOP = 50
+df = pd.read_csv('xclara.csv')
+
+# intialized centroid
+centroids = rand_centroid(df, K)
+
+# max loop for finding centroid
+for i in range(MAX_LOOP):
+
+    # calculate distance to centroid
+    each_dist = dist_centroids(df, centroids)
+
+    # define cluster to minium distance
+    cluster = each_dist.idxmin(axis = 'columns')
+
+    # calculate withiness old
+    old_withiness = withiness(df, centroids, cluster)
+
+    # find new centroid
+    new_centroids = new_mean_centroids(df, centroids, cluster)
+
+    # calculate new mean centroids
+    new_withiness = withiness(df, new_centroids, cluster)
+
+    # quit loop when withinness change so small
+    if abs(new_withiness - old_withiness) < 0.0000001:
+        print('Slow change withiness, quit at {} loop\n'.format(i))
+        break
+    else:
+        # assign new_centroids to centroids and find better one
+        centroids = new_centroids
